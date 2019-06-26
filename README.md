@@ -8,6 +8,8 @@ The default listening address is `0.0.0.0:1234`, modify the main function to cha
 
 compatible with python 3.7 and later versions (since the `http.server.ThreadingHTTPServer` only appears after python 3.7)
 
+**Note:** python3 also provided file based HTTP server, start with `python3 -m http.server <port>`
+
 ## run
 
 ```shell
