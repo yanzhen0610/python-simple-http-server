@@ -2,9 +2,9 @@
 
 This is made for some simple cases. For example, mock API.
 
-default listening on `0.0.0.0:1234`
+The default listening address is `0.0.0.0:1234`, modify the main function to change.
 
-no extra packages required, just run with `python3 server.py`
+**no extra packages required**, just run with `python3 server.py`
 
 compatible with python 3.7 and later versions (since the `http.server.ThreadingHTTPServer` only appears after python 3.7)
 
