@@ -21,6 +21,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.__response_status_code = 500
         self.__response_headers = list()
         self.__response = bytes()
+        self.session = None
         super().__init__(*args, **kwargs)
 
     def __parse_path(self):
@@ -89,6 +90,9 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(self.__response)
         # reset
         self.__response = bytes()
+
+        # reset session
+        self.session = None
 
     def set_status(self, status_code):
         self.__response_status_code = status_code
@@ -199,6 +203,18 @@ class ExampleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.append_response(self.request_payload)
         self.set_status(200)
 
+    def params_example(self):
+        self.append_response('Parameters:\n')
+        self.append_response(self.params) # self.params is type of dict
+        self.set_status(200)
+
+    def session_example(self):
+        self.session_start() # start new session if client didn't provide session ID
+        self.session.update(self.params) # self.session is type of dict
+        self.append_response('session data:\n')
+        self.append_response(self.session)
+        self.set_status(200)
+
 class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
@@ -206,6 +222,10 @@ class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
     def _setup_handlers(self):
         self.set_GET_handler('/', ExampleHTTPRequestHandler.get_example)
         self.set_POST_handler('/', ExampleHTTPRequestHandler.post_example)
+        self.set_GET_handler('/params', ExampleHTTPRequestHandler.params_example)
+        self.set_POST_handler('/params', ExampleHTTPRequestHandler.params_example)
+        self.set_GET_handler('/session', ExampleHTTPRequestHandler.session_example)
+        self.set_POST_handler('/session', ExampleHTTPRequestHandler.session_example)
 
 
 def main(bind_address='0.0.0.0', port=1234):
