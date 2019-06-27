@@ -185,7 +185,7 @@ class BaseHTTPRequestHandlerPool:
     def set_POST_handler(self, path, callable_handler):
         self.post_handlers[path] = callable_handler
 
-class HTTPServer(http.server.ThreadingHTTPServer):
+class HTTPServer(http.server.ThreadingHTTPServer if hasattr(http.server, 'ThreadingHTTPServer') else http.server.HTTPServer):
     def __init__(self, server_address, request_handler_class=BaseHTTPRequestHandlerPool):
         super().__init__(server_address, request_handler_class)
 

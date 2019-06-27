@@ -1,14 +1,24 @@
 # python-simple-http-server
 
-This is made for some simple cases. For example, mock API.
+This is made for some simple cases. For example, mocking third party API for testing.
 
 The default listening address is `0.0.0.0:1234`, modify the main function to change.
 
 **no extra packages required**, just run with `python3 server.py`
 
-compatible with python 3.7 and later versions (since the `http.server.ThreadingHTTPServer` only appears after python 3.7)
+~~This python code is compatible with python `3.7` and later versions (since the `http.server.ThreadingHTTPServer` only appears after python 3.7)~~
+
+`HTTPServer` is conditionally inherit from `http.server.ThreadingHTTPServer` if python version is lager then `3.7`
 
 **Note:** python3 also provided file based HTTP server, start with `python3 -m http.server <port>`
+
+## `HTTPServer` conditionally inherit
+
+```python
+class HTTPServer(http.server.ThreadingHTTPServer if hasattr(http.server, 'ThreadingHTTPServer') else http.server.HTTPServer):
+    def __init__(self, server_address, request_handler_class=BaseHTTPRequestHandlerPool):
+        super().__init__(server_address, request_handler_class)
+```
 
 ## run
 
