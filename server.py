@@ -35,8 +35,11 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             all_cookies_header = []
 
         cookies_str_iter = (cookie_str.strip() for cookies_str in all_cookies_header for cookie_str in cookies_str.split(';'))
-        cookies_kv_iter = (cookie_str.split('=') for cookie_str in cookies_str_iter)
-        cookies = {urllib.parse.unquote(k): urllib.parse.unquote(v) for k, v in cookies_kv_iter}
+        cookies_kv_iter = (cookie_str.split('=', 1) for cookie_str in cookies_str_iter)
+        cookies_kv_iter = filter(lambda x: len(x) > 0 and len(x[0]) > 0, cookies_kv_iter)
+        cookies_normalized_kv_iter = (cookie_kv + [None] for cookie_kv in cookies_kv_iter)
+        cookies = {urllib.parse.unquote(k): (
+            urllib.parse.unquote(v) if v is not None else None) for k, v, *_ in cookies_normalized_kv_iter}
 
         self.cookies = cookies
 
@@ -201,11 +204,19 @@ class ExampleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.append_response(self.headers)
         self.append_response('Request Payload:\n')
         self.append_response(self.request_payload)
+        self.append_headers('Content-Type', 'text/plain')
         self.set_status(200)
 
     def params_example(self):
         self.append_response('Parameters:\n')
         self.append_response(self.params) # self.params is type of dict
+        self.append_headers('Content-Type', 'text/plain')
+        self.set_status(200)
+
+    def cookies_example(self):
+        self.append_response('Cookies:\n')
+        self.append_response(self.cookies)
+        self.append_headers('Content-Type', 'text/plain')
         self.set_status(200)
 
     def session_example(self):
@@ -213,6 +224,7 @@ class ExampleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.session.update(self.params) # self.session is type of dict
         self.append_response('session data:\n')
         self.append_response(self.session)
+        self.append_headers('Content-Type', 'text/plain')
         self.set_status(200)
 
 class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
@@ -221,9 +233,15 @@ class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
 
     def _setup_handlers(self):
         self.set_GET_handler('/', ExampleHTTPRequestHandler.get_example)
+
         self.set_POST_handler('/', ExampleHTTPRequestHandler.post_example)
+
         self.set_GET_handler('/params', ExampleHTTPRequestHandler.params_example)
         self.set_POST_handler('/params', ExampleHTTPRequestHandler.params_example)
+
+        self.set_GET_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
+        self.set_POST_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
+
         self.set_GET_handler('/session', ExampleHTTPRequestHandler.session_example)
         self.set_POST_handler('/session', ExampleHTTPRequestHandler.session_example)
 

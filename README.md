@@ -193,6 +193,59 @@ Parameters:
 {'a': 'b', 'c': 'd', 'url': 'https://github.com/yanzhen0610/python-simple-http-server', 'key': 'value'}
 ```
 
+### with cookies
+
+#### code
+
+```python
+class ExampleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def cookies_example(self):
+        self.append_response('Cookies:\n')
+        self.append_response(self.cookies)
+        self.append_headers('Content-Type', 'text/plain')
+        self.set_status(200)
+
+class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
+    def __init__(self, *args, **kwargs):
+        super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
+
+    def _setup_handlers(self):
+        self.set_GET_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
+        self.set_POST_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
+```
+
+#### curl
+
+```shell
+curl 'localhost:1234/cookies?c=d' -H 'Cookie: session=P4G4vqN11RfJIXjrmPX0QEQpxppOvYPA;a=;b' -v
+```
+
+#### output
+
+```plain
+*   Trying ::1...
+* TCP_NODELAY set
+* Connection failed
+* connect to ::1 port 1234 failed: Connection refused
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 1234 (#0)
+> GET /cookies?c=d HTTP/1.1
+> Host: localhost:1234
+> User-Agent: curl/7.54.0
+> Accept: */*
+> Cookie: session=P4G4vqN11RfJIXjrmPX0QEQpxppOvYPA;a=;b
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Content-Type: text/plain
+< Content-Length: 76
+< 
+Cookies:
+* Closing connection 0
+{'session': 'P4G4vqN11RfJIXjrmPX0QEQpxppOvYPA', 'a': '', 'b': None}
+```
+
 ### with session
 
 #### code
