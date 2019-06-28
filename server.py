@@ -47,8 +47,10 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             content_length = int(self.headers.get('Content-Length'))
         except (TypeError, ValueError):
-            content_length = -1
+            self.set_status(411)
+            return False
         self.request_payload = self.rfile.read(content_length)
+        return True
 
     def __parse_request_payload(self):
         if self.request_payload is None:
@@ -148,15 +150,17 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         self.__parse_path()
         self.__parse_cookies()
-        self.__read_request_payload()
-        self.__parse_request_payload()
-        if self.path in self.__post_handlers:
-            try:
-                self.__post_handlers[self.path].__get__(self, self.__class__)()
-            except:
-                traceback.print_exc()
-        else:
-            self.set_status(404)
+        
+        if self.__read_request_payload():
+            self.__parse_request_payload()
+            if self.path in self.__post_handlers:
+                try:
+                    self.__post_handlers[self.path].__get__(self, self.__class__)()
+                except:
+                    traceback.print_exc()
+            else:
+                self.set_status(404)
+
         self.__send_response()
 
 class BaseHTTPRequestHandlerPool:
