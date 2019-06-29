@@ -6,6 +6,10 @@ import string
 import functools
 import traceback
 
+BaseHTTPServer = http.server.HTTPServer
+if hasattr(http.server, 'ThreadingHTTPServer'):
+    BaseHTTPServer = http.server.ThreadingHTTPServer
+
 
 def random_string(length, character_set=string.ascii_letters+string.digits):
     return ''.join(random.choice(character_set) for _ in range(length))
@@ -13,14 +17,23 @@ def random_string(length, character_set=string.ascii_letters+string.digits):
 
 class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     SESSION_ID_LENGTH = 32
+    PUBLIC_SESSION_STORE = dict()
 
-    def __init__(self, *args, get_handlers, post_handlers, session_store, **kwargs):
-        self.__get_handlers = get_handlers
-        self.__post_handlers = post_handlers
-        self.__session_store = session_store
+    def __init__(self, *args, **kwargs):
+        if 'handlers' in kwargs:
+            self.__handlers = kwargs['handlers']
+            del kwargs['handlers']
+        else:
+            self.__handlers = dict()
+        if 'session_store' in kwargs:
+            self.__session_store = kwargs['session_store']
+            del kwargs['session_store']
+        else:
+            self.__session_store = BaseHTTPRequestHandler.PUBLIC_SESSION_STORE
         self.__response_status_code = 500
         self.__response_headers = list()
         self.__response = bytes()
+        self.request_payload = None
         self.session = None
         super().__init__(*args, **kwargs)
 
@@ -28,6 +41,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         self.path = url.path
         self.params = {k: v for k, v in urllib.parse.parse_qsl(url.query)}
+        self.fragment = url.fragment
 
     def __parse_cookies(self):
         all_cookies_header = self.headers.get_all('Cookie')
@@ -74,7 +88,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     # override
     def send_response(self, code, message=None):
-        self.log_request(code)
+        self.log_request(code=code, size=len(self.__response))
         self.send_response_only(code, message=message)
 
     def __send_response(self):
@@ -98,6 +112,8 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         # reset session
         self.session = None
+        # reset request_payload
+        self.request_payload = None
 
     def set_status(self, status_code):
         self.__response_status_code = status_code
@@ -138,9 +154,11 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.__parse_path()
         self.__parse_cookies()
-        if self.path in self.__get_handlers:
+        if 'GET' not in self.__handlers:
+            self.set_status(405)
+        elif self.path in self.__handlers['GET']:
             try:
-                self.__get_handlers[self.path].__get__(self, self.__class__)()
+                self.__handlers['GET'][self.path].__get__(self, self.__class__)()
             except:
                 traceback.print_exc()
         else:
@@ -153,9 +171,11 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         
         if self.__read_request_payload():
             self.__parse_request_payload()
-            if self.path in self.__post_handlers:
+            if 'POST' not in self.__handlers:
+                self.set_status(405)
+            elif self.path in self.__handlers['POST']:
                 try:
-                    self.__post_handlers[self.path].__get__(self, self.__class__)()
+                    self.__handlers['POST'][self.path].__get__(self, self.__class__)()
                 except:
                     traceback.print_exc()
             else:
@@ -163,99 +183,65 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         self.__send_response()
 
+    def dump_info(self):
+        self.append_response(json.dumps({
+            'requestline': self.requestline,
+            'command': self.command,
+            'path': self.path,
+            'fragment': self.fragment,
+            'request_version': self.request_version,
+            'headers': list(self.headers.raw_items()),
+            'cookies': self.cookies,
+            'request_payload': str(self.request_payload) if self.request_payload is not None else None,
+            'params': self.params,
+        }, indent='  '))
+        self.append_headers('Content-Type', 'application/json')
+        self.set_status(501)
+
 class BaseHTTPRequestHandlerPool:
     def __init__(self, handler_class=BaseHTTPRequestHandler):
-        self.get_handlers = dict()
-        self.post_handlers = dict()
+        self.handlers = dict()
         self.session_store = dict()
         self.handler_class = handler_class
         self._setup_handlers()
 
     def __call__(self, *args, **kwargs):
-        return self.handler_class(
-            get_handlers=self.get_handlers,
-            post_handlers=self.post_handlers,
-            session_store=self.session_store,
-            *args,
-            **kwargs
-        )
+        kwargs['handlers'] = self.handlers
+        kwargs['session_store'] = self.session_store
+        return self.handler_class(*args, **kwargs)
 
     def _setup_handlers(self):
-        return
+        self.set_handler('GET', '/', BaseHTTPRequestHandler.dump_info)
+        self.set_handler('POST', '/', BaseHTTPRequestHandler.dump_info)
 
-    def set_GET_handler(self, path, callable_handler):
-        self.get_handlers[path] = callable_handler
+    def set_handler(self, command, path, callable_handler):
+        if command not in self.handlers:
+            self.handlers[command] = dict()
+        self.handlers[command][path] = callable_handler
 
-    def set_POST_handler(self, path, callable_handler):
-        self.post_handlers[path] = callable_handler
-
-class HTTPServer(http.server.ThreadingHTTPServer if hasattr(http.server, 'ThreadingHTTPServer') else http.server.HTTPServer):
+class HTTPServer(BaseHTTPServer):
     def __init__(self, server_address, request_handler_class=BaseHTTPRequestHandlerPool):
         super().__init__(server_address, request_handler_class)
 
-class ExampleHTTPRequestHandler(BaseHTTPRequestHandler):
-    def get_example(self):
-        self.append_response('Hello World!\n')
-        self.append_response('It\'s a GET example.\n')
-        self.append_response('Request Header:\n')
-        self.append_response(self.headers)
-        self.set_status(200)
 
-    def post_example(self):
-        self.append_response('Hello World!\n')
-        self.append_response('It\'s a POST example.\n')
-        self.append_response('Request Header:\n')
-        self.append_response(self.headers)
-        self.append_response('Request Payload:\n')
-        self.append_response(self.request_payload)
-        self.append_headers('Content-Type', 'text/plain')
-        self.set_status(200)
-
-    def params_example(self):
-        self.append_response('Parameters:\n')
-        self.append_response(self.params) # self.params is type of dict
-        self.append_headers('Content-Type', 'text/plain')
-        self.set_status(200)
-
-    def cookies_example(self):
-        self.append_response('Cookies:\n')
-        self.append_response(self.cookies)
-        self.append_headers('Content-Type', 'text/plain')
-        self.set_status(200)
-
-    def session_example(self):
-        self.session_start() # start new session if client didn't provide session ID
-        self.session.update(self.params) # self.session is type of dict
-        self.append_response('session data:\n')
-        self.append_response(self.session)
-        self.append_headers('Content-Type', 'text/plain')
-        self.set_status(200)
-
-class ExampleHTTPRequestHandlerPool(BaseHTTPRequestHandlerPool):
-    def __init__(self, *args, **kwargs):
-        super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
-
-    def _setup_handlers(self):
-        self.set_GET_handler('/', ExampleHTTPRequestHandler.get_example)
-
-        self.set_POST_handler('/', ExampleHTTPRequestHandler.post_example)
-
-        self.set_GET_handler('/params', ExampleHTTPRequestHandler.params_example)
-        self.set_POST_handler('/params', ExampleHTTPRequestHandler.params_example)
-
-        self.set_GET_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
-        self.set_POST_handler('/cookies', ExampleHTTPRequestHandler.cookies_example)
-
-        self.set_GET_handler('/session', ExampleHTTPRequestHandler.session_example)
-        self.set_POST_handler('/session', ExampleHTTPRequestHandler.session_example)
-
-
-def main(bind_address='0.0.0.0', port=1234):
+def main(bind_address=None, port=None, handler_pool_class=BaseHTTPRequestHandlerPool):
     listening_address = bind_address, port
-    handler = ExampleHTTPRequestHandlerPool()
-    http_server = HTTPServer(listening_address, handler)
+    handler_pool = handler_pool_class()
+    http_server = HTTPServer(listening_address, handler_pool)
     http_server.serve_forever()
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bind', '-b', default='', metavar='ADDRESS',
+                        help='Specify alternate bind address '
+                             '[default: all interfaces]')
+    parser.add_argument('port', action='store',
+                        default=8000, type=int,
+                        nargs='?',
+                        help='Specify alternate port [default: 8000]')
+    args = parser.parse_args()
+
+    main(bind_address=args.bind, port=args.port)
