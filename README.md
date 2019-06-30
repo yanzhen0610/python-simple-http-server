@@ -10,6 +10,12 @@ The default listening address is `0.0.0.0:8000`, modify the main function to cha
 
 **Note:** python3 also provided file based HTTP server, start with `python3 -m http.server <port>`
 
+## Why did I create this project instead of using existing framework?
+
+The reason that I created this is I want to keep things simple. I've used Flask before, just for a simple case. But the framework do too much things, and those things make the entire program complicated(such as threading).
+
+Those is what a "framework" should does, but I just want to use a HTTP server as a "library". I want to start a(maybe multiple) HTTP server from my program for some reasons. For example I need to run some test cases(written in Python) to test the other program. And the other program will make some HTTP requests, it will send the same parameter through HTTP requests. But in different test cases, I need my HTTP server to response a different result to make sure the other program works as expected.
+
 ## How to use?
 
 ### steps
