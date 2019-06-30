@@ -224,7 +224,7 @@ class HTTPServer(BaseHTTPServer):
         super().__init__(server_address, request_handler_class)
 
 
-def main(bind_address=None, port=None, handler_pool_class=BaseHTTPRequestHandlerPool):
+def main(bind_address, port, handler_pool_class=BaseHTTPRequestHandlerPool):
     listening_address = bind_address, port
     handler_pool = handler_pool_class()
     http_server = HTTPServer(listening_address, handler_pool)

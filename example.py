@@ -57,7 +57,7 @@ class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPoo
         self.set_handler('POST', '/session', ExampleHTTPRequestHandler.session_example)
 
 
-def main(bind_address=None, port=None):
+def main(bind_address, port):
     simple_http_server.main(bind_address=bind_address, port=port, handler_pool_class=ExampleHTTPRequestHandlerPool)
 
 

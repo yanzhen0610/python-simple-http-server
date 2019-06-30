@@ -5,7 +5,7 @@ with open('README.md', 'r') as file_stream:
 
 setuptools.setup(
     name='simple-http-server',
-    version='1.0.0',
+    version='1.0.1',
     author='Yz.',
     author_email='yanzhen610@gamil.com',
     description='A simple HTTP server library',
