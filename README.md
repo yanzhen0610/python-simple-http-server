@@ -4,7 +4,7 @@ This is made for some simple cases. For example, mocking third party API for tes
 
 The default listening address is `0.0.0.0:8000`, modify the main function to change.
 
-**no extra packages required**, just run with `python3 http_server.py [-h] [--bind ADDRESS] [port]` or `python3 example.py [-h] [--bind ADDRESS] [port]` to run example
+**no extra packages required**, just run with `python3 -m simple_http_server.py [-h] [--bind ADDRESS] [port]` or `python3 example.py [-h] [--bind ADDRESS] [port]` to run example
 
 `HTTPServer` is conditionally inherit from `http.server.ThreadingHTTPServer` if your python version is >= `3.7`
 
@@ -20,11 +20,12 @@ Those is what a "framework" should does, but I just want to use a HTTP server as
 
 ### steps
 
-1. inherit `http_server.BaseHTTPRequestHandler` and write your handlers
-2. inherit `http_server.BaseHTTPRequestHandlerPool` and override method `_setup_handlers()`
-3. make an instance of your class which inherited from `http_server.BaseHTTPRequestHandlerPool`
-4. pass the instance to `http_server.HTTPServer` as `request_handler_class` and make an instance
-5. call the method `serve_forever()` from your `http_server.HTTPServer` instance
+1. import `simple_http_server`
+2. inherit `simple_http_server.BaseHTTPRequestHandler` and write your handlers
+3. inherit `simple_http_server.BaseHTTPRequestHandlerPool` and override method `_setup_handlers()`
+4. make an instance of your class which inherited from `simple_http_server.BaseHTTPRequestHandlerPool`
+5. pass the instance to `simple_http_server.HTTPServer` as `request_handler_class` and make an instance
+6. call the method `serve_forever()` from your `simple_http_server.HTTPServer` instance
 
 ### variables and methods
 
@@ -89,6 +90,8 @@ Those is what a "framework" should does, but I just want to use a HTTP server as
 ## `HTTPServer` conditionally inherit
 
 ```python
+import simple_http_server
+
 BaseHTTPServer = http.server.HTTPServer
 if hasattr(http.server, 'ThreadingHTTPServer'):
     BaseHTTPServer = http.server.ThreadingHTTPServer
@@ -111,7 +114,9 @@ python3 server.py
 #### code
 
 ```python
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+import simple_http_server
+
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def get_example(self):
         self.append_response('Hello World!\n')
         self.append_response('It\'s a GET example.\n')
@@ -119,7 +124,7 @@ class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
         self.append_response(self.headers)
         self.set_status(200)
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 
@@ -168,7 +173,9 @@ Accept: */*
 #### code
 
 ```python
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+import simple_http_server
+
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def post_example(self):
         self.append_response('Hello World!\n')
         self.append_response('It\'s a POST example.\n')
@@ -178,7 +185,7 @@ class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
         self.append_response(self.request_payload)
         self.set_status(200)
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 
@@ -235,12 +242,14 @@ Request Payload:
 #### code
 
 ```python
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+import simple_http_server
+
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def params_example(self):
         self.append_response('Parameters:\n')
         self.append_response(self.params) # self.params is type of dict
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 
@@ -288,14 +297,16 @@ Parameters:
 #### code
 
 ```python
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+import simple_http_server
+
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def cookies_example(self):
         self.append_response('Cookies:\n')
         self.append_response(self.cookies)
         self.append_headers('Content-Type', 'text/plain')
         self.set_status(200)
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 
@@ -341,7 +352,9 @@ Cookies:
 #### code
 
 ```python
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+import simple_http_server
+
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def session_example(self):
         self.session_start() # start new session if client didn't provide session ID
         self.session.update(self.params) # self.session is type of dict
@@ -349,7 +362,7 @@ class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
         self.append_response(self.session)
         self.set_status(200)
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 

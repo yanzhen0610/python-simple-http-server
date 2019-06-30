@@ -1,6 +1,6 @@
-import http_server
+import simple_http_server
 
-class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
+class ExampleHTTPRequestHandler(simple_http_server.BaseHTTPRequestHandler):
     def get_example(self):
         self.append_response('Hello World!\n')
         self.append_response('It\'s a GET example.\n')
@@ -38,7 +38,7 @@ class ExampleHTTPRequestHandler(http_server.BaseHTTPRequestHandler):
         self.append_headers('Content-Type', 'text/plain')
         self.set_status(200)
 
-class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
+class ExampleHTTPRequestHandlerPool(simple_http_server.BaseHTTPRequestHandlerPool):
     def __init__(self, *args, **kwargs):
         super().__init__(handler_class=ExampleHTTPRequestHandler, *args, **kwargs)
 
@@ -58,7 +58,7 @@ class ExampleHTTPRequestHandlerPool(http_server.BaseHTTPRequestHandlerPool):
 
 
 def main(bind_address=None, port=None):
-    http_server.main(bind_address=bind_address, port=port, handler_pool_class=ExampleHTTPRequestHandlerPool)
+    simple_http_server.main(bind_address=bind_address, port=port, handler_pool_class=ExampleHTTPRequestHandlerPool)
 
 
 if __name__ == '__main__':

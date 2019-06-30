@@ -229,19 +229,3 @@ def main(bind_address=None, port=None, handler_pool_class=BaseHTTPRequestHandler
     handler_pool = handler_pool_class()
     http_server = HTTPServer(listening_address, handler_pool)
     http_server.serve_forever()
-
-
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', '-b', default='', metavar='ADDRESS',
-                        help='Specify alternate bind address '
-                             '[default: all interfaces]')
-    parser.add_argument('port', action='store',
-                        default=8000, type=int,
-                        nargs='?',
-                        help='Specify alternate port [default: 8000]')
-    args = parser.parse_args()
-
-    main(bind_address=args.bind, port=args.port)
