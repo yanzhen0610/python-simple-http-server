@@ -104,7 +104,7 @@ class HTTPServer(BaseHTTPServer):
 ## run
 
 ```shell
-python3 server.py
+python3 example.py
 ```
 
 ## example
