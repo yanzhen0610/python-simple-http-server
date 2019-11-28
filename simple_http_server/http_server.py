@@ -71,6 +71,7 @@ class BaseHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             return
 
         content_type = self.headers.get('Content-Type')
+        params = None
 
         if content_type == 'application/json':
             try:
